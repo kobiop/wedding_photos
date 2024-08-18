@@ -7,28 +7,23 @@ from flask import (
     flash,
     send_file,
 )
-from dotenv import load_dotenv
-import MySQLdb
-import os
+import pymongo
 import io
-import base64  # Optional if you want to encode/decode BLOBs using base64
-
-
-load_dotenv()
+import base64
+import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
-app.secret_key = "your_secret_key_here"  # Needed for session-based flash messages
+app.secret_key = os.getenv("SECRET_KEY")  # Use the SECRET_KEY from the .env file
 app.config["UPLOAD_FOLDER"] = "uploads"
 app.config["ALLOWED_EXTENSIONS"] = {"jpg", "jpeg", "png", "gif"}
 
-connection = MySQLdb.connect(
-    host=os.getenv("DATABASE_HOST"),
-    user=os.getenv("DATABASE_USERNAME"),
-    passwd=os.getenv("DATABASE_PASSWORD"),
-    db=os.getenv("DATABASE"),
-    autocommit=True,
-    ssl_mode="VERIFY_IDENTITY",
-)
+load_dotenv()
+
+# MongoDB connection using the environment variable
+client = pymongo.MongoClient(os.getenv("MONGO_URI"))
+db = client.get_database("weddingCluster")
+photos_collection = db.get_collection("wedding_photos")
 
 def allowed_file(filename):
     """Check if the file has an allowed extension."""
@@ -38,32 +33,18 @@ def allowed_file(filename):
     )
 
 def insert_photo(filename, photo_data):
-    """Insert the uploaded photo into the database."""
-    try:
-        cursor = connection.cursor()
-        cursor.execute(
-            "INSERT INTO wedding_photos (filename, photo) VALUES (%s, %s)",
-            (filename, photo_data)
-        )
-        connection.commit()
-    except MySQLdb.Error as e:
-        print("MySQL Error:", e)
-    finally:
-        cursor.close()
+    """Insert the uploaded photo into MongoDB."""
+    photo_document = {
+        "filename": filename,
+        "photo": photo_data
+    }
+    photos_collection.insert_one(photo_document)
 
 def get_photo(photo_id):
-    """Retrieve photo from the database."""
-    try:
-        cursor = connection.cursor()
-        cursor.execute("SELECT filename, photo FROM wedding_photos WHERE id = %s", (photo_id,))
-        result = cursor.fetchone()
-        if result:
-            filename, photo_data = result
-            return filename, photo_data
-    except MySQLdb.Error as e:
-        print("MySQL Error:", e)
-    finally:
-        cursor.close()
+    """Retrieve a photo from MongoDB."""
+    photo = photos_collection.find_one({"_id": photo_id})
+    if photo:
+        return photo["filename"], photo["photo"]
     return None, None
 
 @app.route("/")
@@ -83,7 +64,7 @@ def upload_file():
     if file and allowed_file(file.filename):
         filename = file.filename
         photo_data = file.read()  # Read the file as binary data
-        insert_photo(filename, photo_data)  # Insert the photo into the database
+        insert_photo(filename, photo_data)  # Insert the photo into MongoDB
         flash("File uploaded successfully", "success")
         return redirect(url_for("gallery"))
     else:
@@ -98,32 +79,22 @@ def upload_form():
 @app.route("/gallery")
 def gallery():
     """Render the gallery page with uploaded photos."""
-    try:
-        cursor = connection.cursor()
-        cursor.execute("SELECT id, filename, photo FROM wedding_photos")
-        photos = cursor.fetchall()
+    photos = photos_collection.find()
 
-        # Convert the BLOB data to a format that can be displayed in HTML
-        photo_list = []
-        for photo in photos:
-            photo_id = photo[0]
-            filename = photo[1]
-            photo_data = base64.b64encode(photo[2]).decode("utf-8")
+    # Convert the binary data to a format that can be displayed in HTML
+    photo_list = []
+    for photo in photos:
+        photo_id = str(photo["_id"])
+        filename = photo["filename"]
+        photo_data = base64.b64encode(photo["photo"]).decode("utf-8")
 
-            photo_list.append({"id": photo_id, "filename": filename, "photo_data": photo_data})
-
-    except MySQLdb.Error as e:
-        print("MySQL Error:", e)
-        photo_list = []
-    finally:
-        cursor.close()
+        photo_list.append({"id": photo_id, "filename": filename, "photo_data": photo_data})
 
     return render_template("gallery.html", photos=photo_list)
 
-
-@app.route("/photo/<int:photo_id>")
+@app.route("/photo/<photo_id>")
 def show_photo(photo_id):
-    """Serve the photo from the database."""
+    """Serve the photo from MongoDB."""
     filename, photo_data = get_photo(photo_id)
     if photo_data:
         mimetype = 'image/jpeg'  # Default MIME type; adjust as needed

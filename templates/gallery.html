@@ -23,22 +23,17 @@
             gap: 10px;
         }
 
-        .fixed-size {
-            width: 200px;
-            /* Set the desired width */
-            height: 200px;
-            /* Set the desired height */
-            object-fit: cover;
-            /* Ensures the image covers the entire area, cropping if necessary */
+        .card {
+            width: 100%;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .gallery img {
+        .card img {
             width: 100%;
-            height: auto;
+            height: 100%;
+            object-fit: cover;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .headline {
@@ -48,25 +43,16 @@
             color: #070606;
         }
 
-        @media (max-width: 1200px) {
-            .gallery {
-                grid-template-columns: repeat(3, 1fr);
-                /* 3 columns for medium screens */
-            }
-        }
-
-        @media (max-width: 992px) {
-            .gallery {
-                grid-template-columns: repeat(2, 1fr);
-                /* 2 columns for tablets */
-            }
-        }
-
         @media (max-width: 768px) {
             .gallery {
-                grid-template-columns: repeat(3, 1fr);
-                /* 3 columns for phones */
+                grid-template-columns: repeat(2, 1fr);
+                /* 2 columns for small screens */
                 gap: 8px;
+            }
+
+            .card {
+                height: 150px;
+                /* Smaller card height on small screens */
             }
 
             .headline {
@@ -76,9 +62,14 @@
 
         @media (max-width: 576px) {
             .gallery {
-                grid-template-columns: repeat(3, 1fr);
-                /* Ensure 3 columns on very small phones */
+                grid-template-columns: repeat(2, 1fr);
+                /* Ensure 2 columns on very small phones */
                 gap: 6px;
+            }
+
+            .card {
+                height: 120px;
+                /* Even smaller card height on very small screens */
             }
 
             .headline {
@@ -90,6 +81,13 @@
                 border-radius: 4px;
             }
         }
+
+        /* Fix for the navbar toggle button on small screens */
+        .navbar-toggler {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
     </style>
 </head>
 
@@ -100,10 +98,8 @@
         <h1 class="headline">גלריית תמונות</h1>
         <div class="gallery">
             {% for photo in photos %}
-
-            <div class="card col mb-3" style="width: 18rem;">
+            <div class="card">
                 <img src="data:image/jpeg;base64,{{ photo.photo_data }}" alt="{{ photo.filename }}" class="img-fluid">
-
             </div>
             {% endfor %}
         </div>
