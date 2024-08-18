@@ -17,7 +17,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")  # Use the SECRET_KEY from the .env file
 app.config["UPLOAD_FOLDER"] = "uploads"
 app.config["ALLOWED_EXTENSIONS"] = {"jpg", "jpeg", "png", "gif"}
-
+app.secret_key = os.getenv('SECRET_KEY')
 load_dotenv()
 
 # MongoDB connection using the environment variable
