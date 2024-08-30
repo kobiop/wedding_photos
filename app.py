@@ -6,12 +6,14 @@ from flask import (
     render_template,
     flash,
     send_file,
+    jsonify
 )
 import pymongo
 import io
 import base64
 import os
 from dotenv import load_dotenv
+from bson import ObjectId  # Correct import for ObjectId
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")  # Use the SECRET_KEY from the .env file
@@ -94,21 +96,18 @@ def gallery():
 
 @app.route("/photo/<photo_id>")
 def show_photo(photo_id):
-    """Serve the photo from MongoDB."""
-    filename, photo_data = get_photo(photo_id)
-    if photo_data:
-        mimetype = 'image/jpeg'  # Default MIME type; adjust as needed
-        if filename.lower().endswith(".png"):
-            mimetype = 'image/png'
-        elif filename.lower().endswith(".gif"):
-            mimetype = 'image/gif'
-        return send_file(
-            io.BytesIO(photo_data),
-            attachment_filename=filename,
-            mimetype=mimetype
-        )
-    else:
-        return "Photo not found", 404
+    """Serve a photo as a base64 encoded image."""
+    photo = photos_collection.find_one({"_id":ObjectId(photo_id)})
+    print("im here",photo_id)
 
+    if photo:
+        # Convert the binary data to a base64 string
+        photo_data = base64.b64encode(photo["photo"]).decode("utf-8")
+        
+        # Return the photo data in a JSON response
+        return jsonify({"photo_data": photo_data})
+    else:
+        return jsonify({"error": "Photo not found"}), 404
+    
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000,debug=True)

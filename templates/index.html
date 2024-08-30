@@ -104,13 +104,15 @@
 
     <div class="container">
         <h1 class="headline">✨ ברוכים הבאים לחתונה של לינה וקובי ✨</h1>
-        <p class="text-center">❤️ כאן תוכלו לצלם ולעלות תמונות שצילמת ולעזור לנו ליצור זכרונות קטנים ❤️</p>
+        <p class="text-center">📸 כאן תוכלו לצלם ולעלות תמונות שצילמתם📸</p>
+        <p class="text-center">❤️ ולעזור לנו ליצור זכרונות קטנים ❤️</p>
+
+
         <h2 class="text-center">העלה תמונה</h2>
         <form id="uploadForm" action="{{ url_for('upload_file') }}" method="POST" enctype="multipart/form-data">
             <div class="file-container mb-3">
                 <label for="formFile" class="custom-file-upload">
-                    בחר תמונה
-                    <input class="custom-file-input" type="file" id="formFile" name="photo">
+                    בחר העלה תמונה / פתח מצלמה <input class="custom-file-input" type="file" id="formFile" name="photo">
                 </label>
             </div>
             <div class="text-center">
